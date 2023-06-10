@@ -106,11 +106,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         )
 
     def to_internal_value(self, data):
-        ingredients = data['ingredients'].copy()
-        for i in range(len(ingredients)):
-            ingredients[i] = ingredients[i]['id']
         data_without_amount = data.copy()
-        data_without_amount['ingredients'] = ingredients
+        if 'ingredients' in data:
+            ingredients = data['ingredients'].copy()
+            for i in range(len(ingredients)):
+                ingredients[i] = ingredients[i]['id']
+            data_without_amount['ingredients'] = ingredients
         return super().to_internal_value(data_without_amount)
     
     def create(self, validated_data):
@@ -120,12 +121,22 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         for tag in tags:
             RecipeTag.objects.create(
                 tag=tag, recipe=current_recipe)
-        amounts = self.initial_data['ingredients']
+        self.create_ingredient_recipe_link(current_recipe, ingredients)
+        return current_recipe
+    
+    def create_ingredient_recipe_link(self, current_recipe, ingredients):
+        ingredients_with_amount = self.initial_data['ingredients']
         for i in range(len(ingredients)):
-            amount = amounts[i]['amount']
+            amount = ingredients_with_amount[i]['amount']
             IngredientRecipe.objects.create(
                 ingredient=ingredients[i], recipe=current_recipe, amount=amount)
-        return current_recipe
+
+    def update(self, instance, validated_data):
+        if 'ingredients' in validated_data:
+            IngredientRecipe.objects.filter(recipe=instance).delete()
+            ingredients = validated_data.pop('ingredients')
+            self.create_ingredient_recipe_link(instance, ingredients)
+        return super().update(instance, validated_data)
     
     def validate_cooking_time(self, value):
         # Проверяет, что время приготовления неотрицательное.

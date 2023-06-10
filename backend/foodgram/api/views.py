@@ -26,11 +26,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilterSet
 
-    """def get_filterset_kwargs(self, filterset_class):
-        kwargs = super(RecipeViewSet, self).get_filterset_kwargs(filterset_class)
-        kwargs['user'] = self.request.user
-        return kwargs"""
-
     def get_serializer_class(self):
         if self.action == 'favorite':
             return FavoriteRecipesSerializer
@@ -47,6 +42,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         instance_serializer = RecipeReadSerializer(instance, context={'request': request})
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+        instance_serializer = RecipeReadSerializer(instance, context={'request': request})
+        return Response(instance_serializer.data)
     
     def add_del_recipe_to_users_list(self, model_name):
         recipe = get_object_or_404(Recipe, pk=self.request.parser_context['kwargs']['pk'])
@@ -72,27 +78,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(["post", "delete"], detail=True, permission_classes=(permissions.IsAuthenticated,))
     def shopping_cart(self, request, *args, **kwargs):
         return self.add_del_recipe_to_users_list(ShoppingCart)
-    
-    def show_users_list(self):
-        current_user = self.request.user
-        if self.action == 'favorite_recipes':
-            recipes_list = Recipe.objects.filter(favorited_by__user=current_user)
-        elif self.action == 'shopping_cart_recipes':
-            recipes_list = Recipe.objects.filter(in_shopping_cart__user=current_user)
-        page = self.paginate_queryset(recipes_list)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(recipes_list, many=True)
-        return Response(serializer.data)
-    
-    @action(['get',], detail=False, permission_classes=(permissions.IsAuthenticated,))
-    def favorite_recipes(self, request, *args, **kwargs):
-        return self.show_users_list()
-
-    @action(['get',], detail=False, permission_classes=(permissions.IsAuthenticated,))
-    def shopping_cart_recipes(self, request, *args, **kwargs):
-        return self.show_users_list()
 
 
 class TagViewSet(viewsets.ModelViewSet):
