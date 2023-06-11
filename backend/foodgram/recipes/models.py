@@ -38,10 +38,10 @@ class Recipe(models.Model):
         Tag, through='RecipeTag', verbose_name='Тэги'
     )
     # тут картинка - не забыть поставить pillow
-    ingredients = models.ManyToManyField(
+    """ingredients = models.ManyToManyField(
         Ingredient, through='IngredientRecipe', verbose_name='Ингридиенты'
-    )
-    
+    )"""
+
     class Meta:
         ordering = ['-pub_date']
 
@@ -77,12 +77,14 @@ class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        verbose_name='Ингридиент'
+        verbose_name='Ингридиент',
+        related_name='recipes'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        verbose_name='Рецепт'
+        verbose_name='Рецепт',
+        related_name = 'ingredients'
     )
     amount = models.FloatField('Количество')
 

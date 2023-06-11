@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django.http.response import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets, permissions, status
 from rest_framework.response import Response
@@ -57,11 +58,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def add_del_recipe_to_users_list(self, model_name):
         recipe = get_object_or_404(Recipe, pk=self.request.parser_context['kwargs']['pk'])
         current_user = self.request.user
-        if self.request.method == "DELETE":
+        if self.request.method == 'DELETE':
             instance = get_object_or_404(model_name, user=current_user, recipe=recipe)
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
-        elif self.request.method == "POST":
+        elif self.request.method == 'POST':
             data_with_recipe = self.request.data.copy()
             data_with_recipe['recipe'] = recipe.pk
             serializer = self.get_serializer(data=data_with_recipe)
@@ -75,9 +76,49 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, *args, **kwargs):
         return self.add_del_recipe_to_users_list(FavoriteRecipes)
     
-    @action(["post", "delete"], detail=True, permission_classes=(permissions.IsAuthenticated,))
+    @action(['post', 'delete'], detail=True, permission_classes=(permissions.IsAuthenticated,))
     def shopping_cart(self, request, *args, **kwargs):
         return self.add_del_recipe_to_users_list(ShoppingCart)
+    
+    def get_ingredient_set(self, recipe_list):
+        ingredient_set = {}
+        for recipe in recipe_list:
+            ingredients = recipe.ingredients.all()
+            for ingredient in ingredients:
+                amount = ingredient.amount
+                ingredient_name = ingredient.ingredient.name
+                if ingredient_name not in ingredient_set:
+                    measurement_unit = ingredient.ingredient.measurement_unit
+                    ingredient_set[ingredient_name]=[amount, measurement_unit]
+                else:
+                    ingredient_set[ingredient_name][0] += amount
+        return self.create_str_ingredient_list(ingredient_set, recipe_list)
+    
+    def create_str_ingredient_list(self, ingredient_set, recipe_list):
+        header = self.get_ingredient_list_header(recipe_list)
+        footer = '\n⁃ Foodgram ⁃'
+        ingredient_str_list = []
+        for ingredient, amount in ingredient_set.items():
+            ingredient_str_list.append(f'▻ {ingredient} ({amount[1]}) - {int(amount[0])}')
+        return header + '\n'.join(ingredient_str_list) + footer
+    
+    def get_ingredient_list_header(self, recipe_list):
+        header = '⁃ Список покупок ⁃\nдля приготовления: '
+        for recipe in recipe_list:
+            header += f'{recipe.name}, '
+        return header[:-2] + '\n'
+
+    @action(['get',], detail=False, permission_classes=(permissions.IsAuthenticated,))
+    def download_shopping_cart(self, request, *args, **kwargs):
+        current_user = self.request.user
+        recipe_queryset = Recipe.objects.filter(in_shopping_cart__user=current_user)
+        ingredient_list = self.get_ingredient_set(recipe_queryset)
+        filename = f'{current_user.first_name} {current_user.last_name}_ingredients_list.txt'
+        response = HttpResponse(
+            ingredient_list, content_type='text/plain; charset=utf8', status=status.HTTP_200_OK
+        )
+        response['Content-Disposition'] = 'attachment; filename={0}'.format(filename)
+        return response
 
 
 class TagViewSet(viewsets.ModelViewSet):
