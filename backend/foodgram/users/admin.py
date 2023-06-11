@@ -19,14 +19,20 @@ class ShoppingCartInline(admin.TabularInline):
 
 
 class UserAdmin(admin.ModelAdmin):
+    """
+    Oтображение в админке модели User
+    Содержит инлайны для связи с Recipe через FavoriteRecipes и ShoppingCart
+    """
     list_editable = ('password',)
-    list_display = ('pk', 'username', 'first_name', 'last_name', 'password') 
+    list_display = ('pk', 'username', 'first_name', 'last_name', 'password')
     search_fields = ('email', 'username')
     inlines = (FavoriteInline, ShoppingCartInline)
 
 
 class SubscribeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'author', 'user') 
+    """Oтображение в админке модели Subscribe"""
+    list_display = ('pk', 'author', 'user')
+
 
 admin.site.register(Subscribe, SubscribeAdmin)
 admin.site.register(User, UserAdmin)
