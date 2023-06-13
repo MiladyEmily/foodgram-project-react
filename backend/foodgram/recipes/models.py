@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from users.models import User
@@ -18,7 +19,7 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     """
-    Ингридиенты для рецептов (может быть несколько)
+    Ингредиенты для рецептов (может быть несколько)
     Связаны с Recipe через IngredientRecipe
     """
     name = models.CharField('Название', max_length=200)
@@ -44,7 +45,7 @@ class Recipe(models.Model):
         verbose_name='Автор публикации',
     )
     text = models.TextField('Описание')
-    cooking_time = models.IntegerField('Время приготовления, мин')
+    cooking_time = models.PositiveIntegerField('Время приготовления, мин')
     pub_date = models.DateTimeField(
         'Дата публикации',
         auto_now_add=True,
@@ -103,7 +104,7 @@ class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        verbose_name='Ингридиент',
+        verbose_name='Ингредиент',
         related_name='recipes'
     )
     recipe = models.ForeignKey(
@@ -112,7 +113,10 @@ class IngredientRecipe(models.Model):
         verbose_name='Рецепт',
         related_name='ingredients'
     )
-    amount = models.FloatField('Количество')
+    amount = models.FloatField(
+        'Количество',
+        validators=[MinValueValidator(0)]
+    )
 
     class Meta:
         constraints = [
@@ -124,6 +128,11 @@ class IngredientRecipe(models.Model):
 
     def __str__(self):
         return f'{self.recipe} {self.ingredient}'
+
+    def save(self, *args, **kwargs):
+        """Добавлена проверка валидаторами перед сохранением в БД."""
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class ShoppingCart(models.Model):

@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import permissions
 
+from .utils import check_user_is_admin_or_superuser
+
 
 User = get_user_model()
 
@@ -41,16 +43,3 @@ class IsAuthorOrAdminOrReadOnly(permissions.BasePermission):
                 )
             )
         )
-
-
-def check_user_is_admin_or_superuser(user):
-    """
-    Проверяет, является ли пользователь админом или суперюзером.
-    """
-    return (
-        user.is_authenticated
-        and (
-            user.is_superuser
-            or user.is_staff
-        )
-    )

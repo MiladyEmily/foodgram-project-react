@@ -1,30 +1,17 @@
 import re
-import base64
 
-from django.core.files.base import ContentFile
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (
-    Tag, Ingredient, Recipe, ShoppingCart, FavoriteRecipes, RecipeTag,
-    IngredientRecipe
-)
+from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
+                            Recipe, RecipeTag, ShoppingCart, Tag)
 from users.models import Subscribe
+from .fields import Base64ImageField
 
 
 User = get_user_model()
-
-
-class Base64ImageField(serializers.ImageField):
-    """Декодирует строку из base64 в картинку и сохраняет файл."""
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        return super().to_internal_value(data)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -42,7 +29,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    """Сериализатор для ингридиентов."""
+    """Сериализатор для ингредиентов."""
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
@@ -83,6 +70,26 @@ class UserGetSerializer(UserBaseSerializer):
     pass
 
 
+class IngredientWithAmountReadSerializer(serializers.ModelSerializer):
+    """Сериализатор для показа ингредиента с его количеством в рецепте."""
+    ingredient = IngredientSerializer()
+
+    class Meta:
+        model = IngredientRecipe
+        fields = (
+            'ingredient', 'amount'
+        )
+
+    def to_representation(self, instance):
+        """
+        Делает так, чтобы информация об ингредиенте и его количестве была на
+        одном уровне вложенности.
+        """
+        ret = super().to_representation(instance)
+        ret['ingredient']['amount'] = ret['amount']
+        return ret['ingredient']
+
+
 class RecipeReadSerializer(serializers.ModelSerializer):
     """
     Сериализатор для чтения рецептов.
@@ -94,7 +101,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     tags = TagSerializer(many=True)
-    ingredients = serializers.SerializerMethodField()
+    ingredients = IngredientWithAmountReadSerializer(many=True)
     author = UserGetSerializer()
     image = Base64ImageField(required=True, allow_null=False)
 
@@ -104,18 +111,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'id', 'tags', 'author', 'ingredients', 'name', 'text', 'image',
             'cooking_time', 'is_favorited', 'is_in_shopping_cart'
         )
-
-    def get_ingredients(self, obj):
-        """
-        Добавляет информацию об ингридиенте и его количестве в выдачу.
-        """
-        ingredients = []
-        ingredientrecipe_list = obj.ingredients.all()
-        for item in ingredientrecipe_list:
-            base_ingredient_info = IngredientSerializer(item.ingredient).data
-            base_ingredient_info['amount'] = item.amount
-            ingredients.append(base_ingredient_info)
-        return ingredients
 
     def get_is_in_shopping_cart(self, obj):
         """
@@ -144,6 +139,26 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         )
 
 
+class IngredientIdAmountSerializer(serializers.ModelSerializer):
+    id = serializers.SlugRelatedField(
+        source='ingredient',
+        slug_field='id',
+        queryset=Ingredient.objects.all(),
+    )
+
+    class Meta:
+        model = IngredientRecipe
+        fields = ('id', 'amount')
+
+    def validate_amount(self, value):
+        """Проверяет, что количество ингредиента неотрицательное."""
+        if value <= 0:
+            raise serializers.ValidationError(
+                'Количество ингредиента не может быть отрицательным.'
+            )
+        return value
+
+
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """
     Сериализатор для создания/редактирования рецептов.
@@ -158,11 +173,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    ingredients = serializers.SlugRelatedField(
-        slug_field='id',
-        queryset=Ingredient.objects.all(),
-        many=True
-    )
+    ingredients = IngredientIdAmountSerializer(many=True)
     image = Base64ImageField(required=True, allow_null=False)
 
     class Meta:
@@ -173,18 +184,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('author',)
 
-    def to_internal_value(self, data):
-        """
-        Дополнительно убирает из первоначальных данных количество ингридиента.
-        """
-        data_without_amount = data.copy()
-        if 'ingredients' in data:
-            ingredients = data['ingredients'].copy()
-            for i in range(len(ingredients)):
-                ingredients[i] = ingredients[i]['id']
-            data_without_amount['ingredients'] = ingredients
-        return super().to_internal_value(data_without_amount)
-
     def create(self, validated_data):
         """
         Создаёт объект рецепта.
@@ -193,10 +192,14 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
         current_recipe = Recipe.objects.create(**validated_data)
-        for tag in tags:
-            RecipeTag.objects.create(
-                tag=tag, recipe=current_recipe)
-        self.create_ingredient_recipe_link(current_recipe, ingredients)
+        bulk_tags = [RecipeTag(
+                recipe=current_recipe,
+                tag=tag
+            )
+            for tag in tags
+        ]
+        RecipeTag.objects.bulk_create(bulk_tags)
+        self.create_ingredient_recipe_link(self, current_recipe, ingredients)
         return current_recipe
 
     def create_ingredient_recipe_link(self, current_recipe, ingredients):
@@ -204,12 +207,14 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         Создаёт связь многое-ко-многим с Ingredient через IngredientRecipe.
         Вносит в модель IngredientRecipe параметр исходных данных - amount.
         """
-        ingredients_with_amount = self.initial_data['ingredients']
-        for i in range(len(ingredients)):
-            amount = ingredients_with_amount[i]['amount']
-            IngredientRecipe.objects.create(
-                ingredient=ingredients[i], recipe=current_recipe, amount=amount
+        bulk_ingredients = [IngredientRecipe(
+                recipe=current_recipe,
+                ingredient=ingredient['ingredient'],
+                amount=ingredient['amount']
             )
+            for ingredient in ingredients
+        ]
+        IngredientRecipe.objects.bulk_create(bulk_ingredients)
 
     def update(self, instance, validated_data):
         """
@@ -230,16 +235,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Время приготовления не может быть отрицательным.'
             )
-        return value
-
-    def validate_ingredients(self, value):
-        """Проверяет, что количество ингридиента неотрицательное."""
-        ingredients = self.initial_data['ingredients']
-        for ingredient in ingredients:
-            if ingredient['amount'] <= 0:
-                raise serializers.ValidationError(
-                    'Количество ингридиента не может быть отрицательным.'
-                )
         return value
 
 

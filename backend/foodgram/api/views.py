@@ -1,24 +1,23 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.http.response import HttpResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import filters, viewsets, permissions, status
-from rest_framework.response import Response
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.response import Response
 
-from .permissions import IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly
-from .serializers import (
-    TagSerializer, IngredientSerializer, SubscribeSerializer,
-    UserSubscribeSerializer, RecipeWriteSerializer, RecipeReadSerializer,
-    FavoriteRecipesSerializer, RecipeShortSerializer, ShoppingCartSerializer
-)
-from .filtersets import RecipeFilterSet
-from recipes.models import (
-    Tag, Ingredient, Recipe, FavoriteRecipes, ShoppingCart
-)
+from recipes.models import (FavoriteRecipes, Ingredient, Recipe, ShoppingCart,
+                            Tag)
 from users.models import Subscribe
 
+from .filtersets import RecipeFilterSet
+from .permissions import IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly
+from .serializers import (FavoriteRecipesSerializer, IngredientSerializer,
+                          RecipeReadSerializer, RecipeShortSerializer,
+                          RecipeWriteSerializer, ShoppingCartSerializer,
+                          SubscribeSerializer, TagSerializer,
+                          UserSubscribeSerializer)
 
 User = get_user_model()
 
@@ -133,7 +132,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.add_del_recipe_to_users_list(ShoppingCart)
 
     def get_ingredient_set(self, recipe_list):
-        """Получает список покупок со сведенными объемами ингридиентов."""
+        """Получает список покупок со сведенными объемами ингредиентов."""
         ingredient_set = {}
         for recipe in recipe_list:
             ingredients = recipe.ingredients.all()
@@ -260,7 +259,7 @@ class UserCustomViewSet(UserViewSet):
     )
     def subscriptions(self, request, *args, **kwargs):
         """
-        Показывает все объекты User текущего юзера.
+        Показывает все объекты User, на которых подписан текущий юзер.
         Выдача по расширенному типу UserSubscribeSerializer.
         """
         current_user = self.request.user
