@@ -46,7 +46,7 @@ class RecipeAdmin(admin.ModelAdmin):
     in_favorite.short_description = 'В избранном'
 
     def get_tags(self, obj):
-        return [tag.name for tag in obj.tags.all()]
+        return list(obj.tags.values_list('name', flat=True))
     get_tags.short_description = 'Тэги'
 
     def get_image(self, obj):

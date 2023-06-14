@@ -8,8 +8,8 @@ from rest_framework.validators import UniqueTogetherValidator
 from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
                             Recipe, RecipeTag, ShoppingCart, Tag)
 from users.models import Subscribe
-from .fields import Base64ImageField
 
+from .fields import Base64ImageField
 
 User = get_user_model()
 
@@ -199,7 +199,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             for tag in tags
         ]
         RecipeTag.objects.bulk_create(bulk_tags)
-        self.create_ingredient_recipe_link(self, current_recipe, ingredients)
+        self.create_ingredient_recipe_link(current_recipe, ingredients)
         return current_recipe
 
     def create_ingredient_recipe_link(self, current_recipe, ingredients):
@@ -236,6 +236,14 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 'Время приготовления не может быть отрицательным.'
             )
         return value
+
+    def to_representation(self, instance):
+        """Заменяет сериализатор выдачи на RecipeReadSerializer."""
+        ret = RecipeReadSerializer(
+            instance,
+            context={'request': self.context['request']}
+        )
+        return ret.data
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):

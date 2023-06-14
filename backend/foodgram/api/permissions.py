@@ -3,7 +3,6 @@ from rest_framework import permissions
 
 from .utils import check_user_is_admin_or_superuser
 
-
 User = get_user_model()
 
 
