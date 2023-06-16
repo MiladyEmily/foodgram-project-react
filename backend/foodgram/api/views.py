@@ -204,7 +204,7 @@ class UserCustomViewSet(UserViewSet):
         )
 
     @action(
-        ['get',],
+        ['get', ],
         detail=False,
         permission_classes=(permissions.IsAuthenticated,)
     )

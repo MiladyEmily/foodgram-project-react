@@ -184,7 +184,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
         current_recipe = Recipe.objects.create(**validated_data)
-        bulk_tags = [RecipeTag(
+        bulk_tags = [
+            RecipeTag(
                 recipe=current_recipe,
                 tag=tag
             )
@@ -199,7 +200,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         Создаёт связь многое-ко-многим с Ingredient через IngredientRecipe.
         Вносит в модель IngredientRecipe параметр исходных данных - amount.
         """
-        bulk_ingredients = [IngredientRecipe(
+        bulk_ingredients = [
+            IngredientRecipe(
                 recipe=current_recipe,
                 ingredient=ingredient['ingredient'],
                 amount=ingredient['amount']
