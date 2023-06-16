@@ -52,7 +52,7 @@ class Recipe(models.Model):
         db_index=True
     )
     tags = models.ManyToManyField(
-        Tag, through='RecipeTag', verbose_name='Тэги'
+        Tag, through='RecipeTag', verbose_name='Теги'
     )
     image = models.ImageField(
         'Картинка',
@@ -80,7 +80,7 @@ class RecipeTag(models.Model):
     tag = models.ForeignKey(
         Tag,
         on_delete=models.CASCADE,
-        verbose_name='Тэг'
+        verbose_name='Тег'
     )
 
     class Meta:

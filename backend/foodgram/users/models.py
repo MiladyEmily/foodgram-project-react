@@ -16,7 +16,7 @@ class User(AbstractUser):
 
 class Subscribe(models.Model):
     """
-    Модель подписки (связавыет User и User)
+    Модель подписки (связывает User и User)
     Пара User(author)-User(user) должна быть уникальной
     """
     user = models.ForeignKey(

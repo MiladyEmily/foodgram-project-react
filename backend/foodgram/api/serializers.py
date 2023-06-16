@@ -8,14 +8,14 @@ from rest_framework.validators import UniqueTogetherValidator
 from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
                             Recipe, RecipeTag, ShoppingCart, Tag)
 from users.models import Subscribe
-
 from .fields import Base64ImageField
+
 
 User = get_user_model()
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Сериализатор для тэгов."""
+    """Сериализатор для тегов."""
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
@@ -150,14 +150,6 @@ class IngredientIdAmountSerializer(serializers.ModelSerializer):
         model = IngredientRecipe
         fields = ('id', 'amount')
 
-    def validate_amount(self, value):
-        """Проверяет, что количество ингредиента неотрицательное."""
-        if value <= 0:
-            raise serializers.ValidationError(
-                'Количество ингредиента не может быть отрицательным.'
-            )
-        return value
-
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """
@@ -234,6 +226,26 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError(
                 'Время приготовления не может быть отрицательным.'
+            )
+        return value
+
+    def validate_ingredients(self, value):
+        """Проверяет, чтобы ингредиенты для одного рецепта не повтоялись."""
+        unique_ingredients_pk = []
+        for ingredient in value:
+            current_pk = ingredient['ingredient'].pk
+            if current_pk in unique_ingredients_pk:
+                raise serializers.ValidationError(
+                    'Ингредиенты в списке не должны повторяться.'
+                )
+            unique_ingredients_pk.append(current_pk)
+        return value
+
+    def validate_tags(self, value):
+        """Проверяет, чтобы теги для одного рецепта не повтоялись."""
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError(
+                'Теги в списке не должны повторяться.'
             )
         return value
 
