@@ -21,8 +21,8 @@ jobs:
         with:
           push: true
           tags: miladyemily/foodgram:v1.1
-          #context: 
-          file: backend/foodgram/Dockerfile
+          context: backend/
+          file: foodgram/Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
