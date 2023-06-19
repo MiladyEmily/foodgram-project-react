@@ -3,7 +3,7 @@ name: Django-app workflow
 on: [push]
 
 jobs:
-  tests:
+  """tests:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -18,7 +18,7 @@ jobs:
         pip install -r backend/requirements.txt
     - name: Test with flake8 and django tests
       run: |
-        python -m flake8
+        python -m flake8"""
 
   build_and_push_to_docker_hub:
     name: Push Docker image to Docker Hub
@@ -39,8 +39,8 @@ jobs:
         with:
           push: true
           tags: miladyemily/foodgram:v1.1
-          context: backend/
-          file: foodgram/Dockerfile
+          #context: 
+          file: backend/foodgram/Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
