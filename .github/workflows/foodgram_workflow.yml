@@ -3,9 +3,30 @@ name: Django-app workflow
 on: [push]
 
 jobs:
+  
+  frontend_build_and_push_to_docker_hub:
+    name: Push frontend Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker 
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: miladyemily/foodgram_front:v1.1
+          context: frontend
+          file: frontend/Dockerfile
 
-  build_and_push_to_docker_hub:
-    name: Push Docker image to Docker Hub
+  backend_build_and_push_to_docker_hub:
+    name: Push backend Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -29,7 +50,9 @@ jobs:
   
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
-    needs: build_and_push_to_docker_hub
+    needs: 
+      - backend_build_and_push_to_docker_hub
+      - frontend_build_and_push_to_docker_hub
     steps:
     - name: executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
@@ -41,6 +64,9 @@ jobs:
         script: |
             sudo docker-compose stop
             sudo docker-compose rm web
+            sudo docker-compose rm front
+            sudo docker image rm miladyemily/foodgram:v1.1
+            sudo docker image rm miladyemily/foodgram_front:v1.1
             rm .env
             touch .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
