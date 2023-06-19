@@ -12,11 +12,6 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='123456789')
 DEBUG = False
 
 ALLOWED_HOSTS = ['*']
-"""    'localhost',
-    '127.0.0.1',
-    '[::1]',
-    'testserver',
-]"""
 
 INSTALLED_APPS = [
     'api.apps.ApiConfig',
@@ -101,7 +96,7 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = [os.path.join(BASE_DIR, 'static')]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
