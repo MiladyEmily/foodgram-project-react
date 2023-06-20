@@ -27,6 +27,7 @@ jobs:
 
   backend_build_and_push_to_docker_hub:
     name: Push backend Docker image to Docker Hub
+    needs: frontend_build_and_push_to_docker_hub
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -50,9 +51,7 @@ jobs:
   
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
-    needs: 
-      - backend_build_and_push_to_docker_hub
-      - frontend_build_and_push_to_docker_hub
+    needs: backend_build_and_push_to_docker_hub
     steps:
     - name: executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
@@ -78,3 +77,4 @@ jobs:
             sudo docker-compose up -d
             sudo docker-compose exec -T web python manage.py makemigrations
             sudo docker-compose exec -T web python manage.py migrate
+            sudo docker-compose exec -T web python manage.py collectstatic --no-input
