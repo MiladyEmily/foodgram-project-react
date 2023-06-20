@@ -63,7 +63,7 @@ jobs:
         script: |
             sudo docker-compose stop
             sudo docker-compose rm web
-            sudo docker-compose rm front
+            sudo docker-compose rm frontend
             sudo docker image rm miladyemily/foodgram:v1.1
             sudo docker image rm miladyemily/foodgram_front:v1.1
             rm .env
