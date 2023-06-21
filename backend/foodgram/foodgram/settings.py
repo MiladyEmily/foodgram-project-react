@@ -110,7 +110,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'apps.recipes.paginators.PageNumberWithLimitPagination'
+    'DEFAULT_PAGINATION_CLASS': 'api.paginators.PageNumberWithLimitPagination'
 }
 
 AUTH_USER_MODEL = 'users.User'
