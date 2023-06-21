@@ -1,6 +1,6 @@
 from django_filters import filters
 from django_filters.rest_framework.filterset import FilterSet
-from recipes.models import Recipe
+from recipes.models import Recipe, Ingredient
 
 
 class MultiValueTagFilter(filters.BaseCSVFilter, filters.CharFilter):
@@ -11,6 +11,15 @@ class MultiValueTagFilter(filters.BaseCSVFilter, filters.CharFilter):
         if value:
             qs = qs.filter(tags__slug__in=value)
         return qs
+
+
+class NameFilter(FilterSet):
+    """Фильтр по name (вхождение с начала)."""
+    class Meta:
+        model = Ingredient
+        fields = {
+            'name': ['startswith'],
+        }
 
 
 class RecipeFilterSet(FilterSet):
