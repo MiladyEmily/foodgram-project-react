@@ -117,6 +117,7 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'users.User'
 
 DJOSER = {
+    'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
     'PERMISSIONS': {
         'user': ['rest_framework.permissions.AllowAny'],
