@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+
 from recipes.models import FavoriteRecipes, ShoppingCart
 
 from .models import Subscribe
