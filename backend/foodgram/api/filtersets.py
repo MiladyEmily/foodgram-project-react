@@ -1,6 +1,7 @@
 from django_filters import filters
 from django_filters.rest_framework.filterset import FilterSet
-from recipes.models import Recipe, Ingredient
+from django_filters import rest_framework
+from recipes.models import Recipe, Ingredient, Tag
 
 
 class MultiValueTagFilter(filters.BaseCSVFilter, filters.CharFilter):
@@ -8,6 +9,7 @@ class MultiValueTagFilter(filters.BaseCSVFilter, filters.CharFilter):
     Добавляет фильтрацию по полю tags с несколькими значениями (ИЛИ).
     """
     def filter(self, qs, value):
+        print(value)
         if value:
             qs = qs.filter(tags__slug__in=value)
         return qs
@@ -27,7 +29,11 @@ class RecipeFilterSet(FilterSet):
     Фильтр по tags(поле tags__slug), по id автора, по доп.вычисляемым
     полям is_in_shopping_cart (0,1) и is_favorited (0,1) (для авторизованных).
     """
-    tags = MultiValueTagFilter(field_name='tags__slug')
+    tags = rest_framework.ModelMultipleChoiceFilter(
+        field_name='tags__slug',
+        to_field_name='slug',
+        queryset=Tag.objects.all()
+    )
 
     class Meta:
         model = Recipe
