@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
                             Recipe, ShoppingCart, Tag)
-from rest_framework import filters, permissions, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Subscribe
@@ -98,7 +98,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         header = self.get_ingredient_list_header(recipe_queryset)
         ingredients = IngredientRecipe.objects.filter(
             recipe__in=recipe_queryset
-        )
+        ).exclude(ingredient__measurement_unit='по вкусу')
         ingredient_set = list(
             ingredients
             .values_list('ingredient__name', 'ingredient__measurement_unit')
