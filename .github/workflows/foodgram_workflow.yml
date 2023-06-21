@@ -6,7 +6,6 @@ jobs:
   
   frontend_build_and_push_to_docker_hub:
     name: Push frontend Docker image to Docker Hub
-    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
