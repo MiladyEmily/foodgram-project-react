@@ -4,17 +4,6 @@ from django_filters.rest_framework.filterset import FilterSet
 from recipes.models import Ingredient, Recipe, Tag
 
 
-class MultiValueTagFilter(filters.BaseCSVFilter, filters.CharFilter):
-    """
-    Добавляет фильтрацию по полю tags с несколькими значениями (ИЛИ).
-    """
-    def filter(self, qs, value):
-        print(value)
-        if value:
-            qs = qs.filter(tags__slug__in=value)
-        return qs
-
-
 class NameFilterSet(FilterSet):
     """Фильтр по name (вхождение с начала)."""
     name = filters.CharFilter(lookup_expr='startswith')

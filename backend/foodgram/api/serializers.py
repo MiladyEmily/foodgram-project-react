@@ -8,8 +8,8 @@ from rest_framework.validators import UniqueTogetherValidator
 from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
                             Recipe, RecipeTag, ShoppingCart, Tag)
 from users.models import Subscribe
-
 from .fields import Base64ImageField
+
 
 User = get_user_model()
 
