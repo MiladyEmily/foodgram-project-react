@@ -4,7 +4,7 @@ from django.core.management import BaseCommand
 from recipes.models import Ingredient
 
 
-class LoadCsvCommand(BaseCommand):
+class Command(BaseCommand):
     """Загружает из csv-файла в БД из папки data/."""
 
     def handle(self, *args, **options):
