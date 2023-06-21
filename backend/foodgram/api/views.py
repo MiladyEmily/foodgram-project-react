@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Subscribe
 
-from .filtersets import RecipeFilterSet, NameFilter
+from .filtersets import RecipeFilterSet, NameFilterSet
 from .permissions import IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly
 from .serializers import (FavoriteRecipesSerializer, IngredientSerializer,
                           RecipeReadSerializer, RecipeShortSerializer,
@@ -156,7 +156,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filter_class = NameFilter
+    filter_class = NameFilterSet
     pagination_class = None
 
 

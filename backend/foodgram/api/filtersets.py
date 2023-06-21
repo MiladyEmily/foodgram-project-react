@@ -13,13 +13,13 @@ class MultiValueTagFilter(filters.BaseCSVFilter, filters.CharFilter):
         return qs
 
 
-class NameFilter(FilterSet):
+class NameFilterSet(FilterSet):
     """Фильтр по name (вхождение с начала)."""
+    name = filters.CharFilter(lookup_expr='startswith')
+
     class Meta:
         model = Ingredient
-        fields = {
-            'name': ['startswith'],
-        }
+        fields = ['name',]
 
 
 class RecipeFilterSet(FilterSet):
