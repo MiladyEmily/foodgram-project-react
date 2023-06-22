@@ -3,7 +3,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
+from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 from djoser.serializers import UserCreateSerializer
 
 from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
@@ -39,8 +39,14 @@ class IngredientSerializer(serializers.ModelSerializer):
 class UserWriteSerializer(UserCreateSerializer):
     """
     Сериализатор для юзеров.
-    Делает поле username обязательным.
+    Делает поле username обязательным, а email нечувствительным к регистру.
     """
+    email = serializers.EmailField(
+        validators=[
+            UniqueValidator(queryset=User.objects.all(), lookup='iexact'),
+        ]
+    )
+
     class Meta:
         model = User
         fields = ('id', 'first_name', 'last_name', 'email', 'username',
