@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+from djoser.serializers import UserCreateSerializer
 
 from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
                             Recipe, RecipeTag, ShoppingCart, Tag)
@@ -33,6 +34,17 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
+
+
+class UserWriteSerializer(UserCreateSerializer):
+    """
+    Сериализатор для юзеров.
+    Делает поле username обязательным.
+    """
+    class Meta:
+        model = User
+        fields = ('id', 'first_name', 'last_name', 'email', 'username',
+                  'password')
 
 
 class UserBaseSerializer(serializers.ModelSerializer):
