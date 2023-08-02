@@ -4,7 +4,7 @@ Foodgram - «Продуктовый помощник» - сервис, где м
 
 ### Технологии
 
-Python 3.7 | Django 3.2.16 | Django REST Framework 3.12.4 | Docker
+Python 3.7 | Django 3.2.16 | Django REST Framework 3.12.4 | Docker 4.21.0 | PostgreSQL
 
 ### Как запустить проект
 
