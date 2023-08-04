@@ -1,6 +1,4 @@
-Проект доступен по ссылке: http://158.160.57.143/
-
-Данные админа для проверки: логин Emily | почта miladyemily@rambler.ru | пароль abugep53
+Проект доступен по ссылке: http://62.84.118.61/
 
 # Описание проекта Foodgram
 
@@ -8,7 +6,7 @@ Foodgram - «Продуктовый помощник» - сервис, где м
 
 ### Технологии
 
-Python 3.7 | Django 3.2.16 | Django REST Framework 3.12.4
+Python 3.7 | Django 3.2.16 | Django REST Framework 3.12.4 | Docker 4.21.0 | PostgreSQL
 
 ### Как запустить проект
 
