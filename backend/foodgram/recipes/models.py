@@ -59,6 +59,7 @@ class Recipe(models.Model):
         upload_to='recipes/images/',
         null=False
     )
+    portions = models.PositiveIntegerField('Количество порций')
 
     class Meta:
         ordering = ['-pub_date']

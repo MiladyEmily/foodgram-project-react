@@ -127,7 +127,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = (
             'id', 'tags', 'author', 'ingredients', 'name', 'text', 'image',
-            'cooking_time', 'is_favorited', 'is_in_shopping_cart'
+            'cooking_time', 'is_favorited', 'is_in_shopping_cart', 'portions',
         )
 
     def get_is_in_shopping_cart(self, obj):
@@ -190,7 +190,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = (
             'id', 'tags', 'author', 'ingredients', 'name', 'text', 'image',
-            'cooking_time'
+            'cooking_time', 'portions'
         )
         read_only_fields = ('author',)
 
@@ -241,13 +241,21 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             self.create_ingredient_recipe_link(instance, ingredients)
         return super().update(instance, validated_data)
 
-    def validate_cooking_time(self, value):
-        """Проверяет, что время приготовления неотрицательное."""
+    def check_positive(self, value, text):
+        """Проверяет, что значение в поле > 0."""
         if value <= 0:
             raise serializers.ValidationError(
-                'Время приготовления не может быть отрицательным.'
+                f'{text} должно быть положительным числом.'
             )
         return value
+
+    def validate_cooking_time(self, value):
+        """Проверяет, что время приготовления > 0."""
+        return self.check_positive(value, 'Время приготовления')
+    
+    def validate_portions(self, value):
+        """Проверяет, что количество порций > 0."""
+        return self.check_positive(value, 'Количество порций')
 
     def validate_ingredients(self, value):
         """Проверяет, чтобы ингредиенты для одного рецепта не повтоялись."""
