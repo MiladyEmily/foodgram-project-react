@@ -10,6 +10,7 @@ from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
                             Recipe, RecipeTag, ShoppingCart, Tag)
 from users.models import Subscribe
 from .fields import Base64ImageField
+from rest_framework.utils import html, model_meta
 
 
 User = get_user_model()
@@ -121,27 +122,30 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     ingredients = IngredientWithAmountReadSerializer(many=True)
     author = UserGetSerializer()
-    image = Base64ImageField(required=True, allow_null=False)
+    #image = Base64ImageField(required=True, allow_null=False)
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 'tags', 'author', 'ingredients', 'name', 'text', 'image',
+            'id', 'tags', 'author', 'ingredients', 'name', 'text', #'image',
             'cooking_time', 'is_favorited', 'is_in_shopping_cart', 'portions',
         )
 
     def get_is_in_shopping_cart(self, obj):
         """
         Вычисляет, есть ли рецепт в корзине у текущего пользователя.
+        В поле показывается количество порций в корзине (0 если рецепта нет).
         """
         current_user = self.context.get('request').user
-        return (
-            current_user.is_authenticated
-            and ShoppingCart.objects.filter(
+        if not current_user.is_authenticated:
+            return 0
+        shopping_cart_obj = ShoppingCart.objects.filter(
                 user=current_user,
                 recipe=obj
-            ).exists()
-        )
+            )
+        if not shopping_cart_obj:
+            return 0
+        return shopping_cart_obj[0].portions_to_shop
 
     def get_is_favorited(self, obj):
         """
@@ -184,12 +188,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         many=True
     )
     ingredients = IngredientIdAmountSerializer(many=True)
-    image = Base64ImageField(required=True, allow_null=False)
+    #image = Base64ImageField(required=True, allow_null=False)
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 'tags', 'author', 'ingredients', 'name', 'text', 'image',
+            'id', 'tags', 'author', 'ingredients', 'name', 'text', #'image',
             'cooking_time', 'portions'
         )
         read_only_fields = ('author',)
@@ -234,7 +238,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         Полностью перезаписывает связи IngredietnRecipe (если такое поле было
         передано).
         """
-        instance.image = validated_data.get('image', instance.image)
+        #instance.image = validated_data.get('image', instance.image)
         if 'ingredients' in validated_data:
             IngredientRecipe.objects.filter(recipe=instance).delete()
             ingredients = validated_data.pop('ingredients')
@@ -288,11 +292,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
 class RecipeShortSerializer(serializers.ModelSerializer):
     """Сериализатор для сокращенного показа рецепта."""
-    image = Base64ImageField(required=False, allow_null=True)
+    #image = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'cooking_time', 'image')
+        fields = ('id', 'name', 'cooking_time')#, 'image')
 
 
 class UserSubscribeSerializer(UserBaseSerializer):
@@ -407,10 +411,11 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ShoppingCart
-        fields = ('user', 'recipe')
+        fields = ('user', 'recipe', 'portions_to_shop')
         validators = [
             UniqueTogetherValidator(
                 queryset=ShoppingCart.objects.all(),
                 fields=('user', 'recipe')
             )
         ]
+  

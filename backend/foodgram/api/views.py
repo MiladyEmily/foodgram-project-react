@@ -28,6 +28,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     Вьюсет для работы с /recipes.
     {id}/favorite/ - добавление рецепта в избранное.
     {id}/shopping_cart/ - добавление рецепта в корзину.
+                        - с portions_to_shop - в теле обновляет количество
+                          порций в корзине.
     download_shopping_cart/ - загружает .txt со списком покупок.
     """
     queryset = Recipe.objects.all()
@@ -60,8 +62,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        if self.request.method == "PATCH":
+            instance = get_object_or_404(
+                model_name,
+                user=current_user,
+                recipe=recipe
+            )
+            serializer = self.get_serializer(instance, data=self.request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
         data_with_recipe = self.request.data.copy()
         data_with_recipe['recipe'] = recipe.pk
+        if model_name == ShoppingCart and self.request.method == 'POST':
+            data_with_recipe['portions_to_shop'] = recipe.portions
         serializer = self.get_serializer(data=data_with_recipe)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=current_user, recipe=recipe)
@@ -83,7 +97,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.add_del_recipe_to_users_list(FavoriteRecipes)
 
     @action(
-        ['post', 'delete'],
+        ['post', 'delete', 'patch'],
         detail=True,
         permission_classes=(permissions.IsAuthenticated,)
     )

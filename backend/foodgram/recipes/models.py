@@ -54,11 +54,11 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         Tag, through='RecipeTag', verbose_name='Теги'
     )
-    image = models.ImageField(
+    """image = models.ImageField(
         'Картинка',
         upload_to='recipes/images/',
         null=False
-    )
+    )"""
     portions = models.PositiveIntegerField('Количество порций')
 
     class Meta:
@@ -153,6 +153,7 @@ class ShoppingCart(models.Model):
         related_name='in_shopping_cart',
         verbose_name='Рецепт',
     )
+    portions_to_shop = models.PositiveIntegerField('Количество порций')
 
     class Meta:
         constraints = [
