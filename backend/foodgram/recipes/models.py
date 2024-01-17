@@ -54,11 +54,11 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         Tag, through='RecipeTag', verbose_name='Теги'
     )
-    """image = models.ImageField(
+    image = models.ImageField(
         'Картинка',
         upload_to='recipes/images/',
         null=False
-    )"""
+    )
     portions = models.PositiveIntegerField('Количество порций')
 
     class Meta:

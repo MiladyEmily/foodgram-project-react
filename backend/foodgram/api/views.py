@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
 from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -7,6 +6,7 @@ from djoser.views import UserViewSet
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db.models import F
 
 from recipes.models import (FavoriteRecipes, Ingredient, IngredientRecipe,
                             Recipe, ShoppingCart, Tag)
@@ -68,13 +68,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 user=current_user,
                 recipe=recipe
             )
-            serializer = self.get_serializer(instance, data=self.request.data, partial=True)
+            serializer = self.get_serializer(
+                instance,
+                data=self.request.data,
+                partial=True
+            )
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data)
         data_with_recipe = self.request.data.copy()
         data_with_recipe['recipe'] = recipe.pk
         if model_name == ShoppingCart and self.request.method == 'POST':
+            """
+            При первом добавлении в корзину количество порций как в рецепте.
+            """
             data_with_recipe['portions_to_shop'] = recipe.portions
         serializer = self.get_serializer(data=data_with_recipe)
         serializer.is_valid(raise_exception=True)
@@ -107,18 +114,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def create_str_ingredient_list(self):
         """Получает список покупок в строковом формате."""
+        shopping_cart = self.request.user.shopping_cart.all()
+        ingredient_set = []
+        ingredient_set_len = 0
+        for shop_obj in shopping_cart:
+            recipe = shop_obj.recipe
+            portions = shop_obj.portions_to_shop / recipe.portions
+            ingredients = IngredientRecipe.objects.filter(
+                recipe=recipe
+                ).exclude(ingredient__measurement_unit='по вкусу')
+            new_ingredient = ingredients.values_list(
+                    'ingredient__name',
+                    'ingredient__measurement_unit'
+                ).annotate(total_amount=F('amount')*portions)
+            for ingred in new_ingredient:
+                i = 0
+                while i < ingredient_set_len:
+                    if ingredient_set[i][0] == ingred[0] and ingredient_set[i][1] == ingred[1]:
+                        ingredient_set[i][2] = ingredient_set[i][2] + ingred[2]
+                        break
+                    i += 1
+                if i != ingredient_set_len:
+                    continue
+                ingredient_set.append(list(ingred))
+                ingredient_set_len += 1
         recipe_queryset = Recipe.objects.filter(
             in_shopping_cart__user=self.request.user
         )
         header = self.get_ingredient_list_header(recipe_queryset)
-        ingredients = IngredientRecipe.objects.filter(
-            recipe__in=recipe_queryset
-        ).exclude(ingredient__measurement_unit='по вкусу')
-        ingredient_set = list(
-            ingredients
-            .values_list('ingredient__name', 'ingredient__measurement_unit')
-            .annotate(total_amount=Sum('amount'))
-        )
         footer = '\n⁃ Foodgram ⁃'
         ingredient_str_list = []
         for ingredient in ingredient_set:
